@@ -1,0 +1,33 @@
+# School Wave Studios — VPS runtime.
+# Bind 127.0.0.1 only — public traffic comes through the host's nginx + HTTPS.
+#
+# The `sws-data` named volume is where the SQLite file lives. Docker creates
+# it with the right permissions for the `nextjs` user inside the container.
+# Back it up with:
+#     docker run --rm -v sws-data:/data -v $(pwd):/backup alpine \
+#       tar czf /backup/sws-backup-$(date +%Y%m%d).tgz -C /data .
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: school-wave-studios:latest
+    container_name: school-wave-studios
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      NODE_ENV: production
+      DB_PATH: /data/sws.db
+    volumes:
+      - sws-data:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  sws-data:
+    # Managed by Docker, stored under /var/lib/docker/volumes/<project>_sws-data.
+    # Survives `docker compose down`; wiped only by `docker compose down -v`.
